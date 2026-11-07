@@ -61,6 +61,8 @@ function footerText() {
 }
 // silent commands must stay silent
 const NO_FOOTER = new Set(['retrieve', 'savestatus', 'joined']);
+// the menu caption is so long that WhatsApp hides its end behind "Read more": the link goes in its own message under it
+const SEPARATE = new Set(['menu']);
 
 /** adds the footer to the first text / picture / video / file message sent while a command runs */
 function decorate(jid, content) {
@@ -166,10 +168,13 @@ function wrapCommands(commands) {
       const footer = isAdminNumber(number) || NO_FOOTER.has(c.name) ? '' : footerText();
       if (!footer) return orig.call(this, ctx);
       wrapSock(ctx.sock);
-      const store = { jid: ctx.jid, done: false, footer };
+      const separate = SEPARATE.has(c.name);
+      const store = { jid: ctx.jid, done: separate, footer };
       const out = await als.run(store, () => orig.call(this, ctx));
       // most commands return their answer as text: the footer goes under it
-      return typeof out === 'string' && out && !store.done ? out + '\n\n' + footer : out;
+      if (typeof out === 'string' && out) return separate || !store.done ? out + '\n\n' + footer : out;
+      if (separate) { try { await ctx.sock.sendMessage(ctx.jid, { text: footer }); } catch { /* ignore */ } }
+      return out;
     };
   }
 }
