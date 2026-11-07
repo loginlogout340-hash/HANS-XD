@@ -14,10 +14,12 @@ COPY . /app/
 RUN if [ ! -f codes.js ] && [ -f code.js ]; then mv code.js codes.js; fi
 
 # 3) the base files (commands.js, extra.js, media.js, ...) live in the Hans-Mini repo.
-#    Anything this repo does not have is copied from there; files that exist here always win.
+#    The 15 base files are ALWAYS taken from there (a wrong copy in this repo cannot break the bot).
+#    Anything else this repo does not have is copied too; other files that exist here win.
 ARG BASE_REPO=https://github.com/loginlogout340-hash/hans-mini.git
 ARG BASE_REF=main
 RUN git clone --depth 1 --branch "$BASE_REF" "$BASE_REPO" /tmp/base \
+    && for n in commands.js extra.js media.js status.js limit.js hanson.js community.js dl.js admin.js page.js momo.js pulsepage.js more3.js more5.js more6.js; do cp -f "/tmp/base/$n" "/app/$n"; done \
     && for f in /tmp/base/*; do n=$(basename "$f"); [ -e "/app/$n" ] || cp -r "$f" "/app/$n"; done \
     && rm -rf /tmp/base
 
